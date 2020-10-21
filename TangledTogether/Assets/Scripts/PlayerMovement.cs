@@ -37,22 +37,28 @@ public class PlayerMovement : MonoBehaviour
 			direction += Vector3.forward;
 		if (Input.GetKey(down))
 			direction += Vector3.back;
-		//if (Input.GetKeyDown(jump))
-		//{
-		//	direction += Vector3.up;
-		//}
 		direction = direction.normalized;
 
-
 		Jump();
-		if (direction.magnitude > 0.1f)
+
+		if (direction.magnitude > 0.1f && isGrounded)
 		{
 			float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
 			float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
 			transform.rotation = Quaternion.Euler(0f, angle, 0f);
-			transform.position += direction * speed * Time.deltaTime;
+			rb.AddForce(direction * speed * Time.deltaTime, ForceMode.Impulse);
+			//transform.position += direction * speed * Time.deltaTime;
+			direction = Vector3.zero;
 		}
-		direction = Vector3.zero;
+		else if (direction.magnitude <= 0.1f && rb.velocity.x > 0.1f && rb.velocity.z > 0.1f)
+		{
+			rb.AddForce(-direction * speed * 10 * Time.deltaTime, ForceMode.Impulse);
+			Debug.Log("move");
+		}
+		else
+		{
+			direction = Vector3.zero;
+		}
 	}
 
 	void Jump()
@@ -61,7 +67,6 @@ public class PlayerMovement : MonoBehaviour
 
 		if(isGrounded && Input.GetKeyDown(jump))
 		{
-			Debug.Log(transform.name + " jump");
 			rb.AddForce(new Vector3(0, jumpHeight, 0), ForceMode.Impulse);
 		}
 		else if(!isGrounded)
