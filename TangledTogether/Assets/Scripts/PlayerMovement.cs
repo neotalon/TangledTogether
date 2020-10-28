@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Obi;
+using UnityEngine.UI;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -9,16 +10,23 @@ public class PlayerMovement : MonoBehaviour
     public Transform cam;
     public Transform groundCheck;
     public LayerMask groundMask;
-    public float groundDistance = 0.4f;
-    public float speed;
-    public float gravity = -9.82f;
-    public float jumpHeight = 3f;
-    public float turnSmoothTime;
 
-    private bool isGrounded;
-    private float turnSmoothVelocity;
-    private Vector3 velocity;
+    public float groundDistance = 0.4f;
+	[Tooltip("Should not be lower than maxMovementSpeed. Higher value -> reach max speed faster")]
+    public float movementSpeed;
+	public float maxMovementSpeed;
+    public float jumpHeight = 3f;
+    public float gravity = -9.82f;
+    public float turnSmoothTime;
+	public float maxSlopeAngle;
+	public float stopSpeed;
+
+	private RaycastHit hit;
 	private Vector3 direction;
+	private Ray castpoint;
+	private float turnSmoothVelocity;
+	private float slopeAngle;
+    private bool isGrounded;
 
 	[Header("Input")]
 	public KeyCode left = KeyCode.A;
@@ -29,42 +37,19 @@ public class PlayerMovement : MonoBehaviour
 
 	private void Update()
 	{
-		if (Input.GetKey(left))
-			direction += Vector3.left;
-		if (Input.GetKey(right))
-			direction += Vector3.right;
-		if (Input.GetKey(up))
-			direction += Vector3.forward;
-		if (Input.GetKey(down))
-			direction += Vector3.back;
-		direction = direction.normalized;
+		MoveInput();
+		GroundCheck();
+	}
 
+	private void FixedUpdate()
+	{
+		Move();
+		ReverseMoveForce();
 		Jump();
-
-		if (direction.magnitude > 0.1f && isGrounded)
-		{
-			float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-			float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
-			transform.rotation = Quaternion.Euler(0f, angle, 0f);
-			rb.AddForce(direction * speed * Time.deltaTime, ForceMode.Impulse);
-			//transform.position += direction * speed * Time.deltaTime;
-			direction = Vector3.zero;
-		}
-		else if (direction.magnitude <= 0.1f && rb.velocity.x > 0.1f && rb.velocity.z > 0.1f)
-		{
-			rb.AddForce(-direction * speed * 10 * Time.deltaTime, ForceMode.Impulse);
-			Debug.Log("move");
-		}
-		else
-		{
-			direction = Vector3.zero;
-		}
 	}
 
 	void Jump()
 	{
-		isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
-
 		if(isGrounded && Input.GetKeyDown(jump))
 		{
 			rb.AddForce(new Vector3(0, jumpHeight, 0), ForceMode.Impulse);
@@ -75,58 +60,101 @@ public class PlayerMovement : MonoBehaviour
 		}
 	}
 
+	void MoveInput()
+	{
+		direction = Vector3.zero;
+		if (Input.GetKey(left))
+			direction += Vector3.left;
+		if (Input.GetKey(right))
+			direction += Vector3.right;
+		if (Input.GetKey(up))
+			direction += Vector3.forward;
+		if (Input.GetKey(down))
+			direction += Vector3.back;
+		//direction = horizontal + vertical;
+		direction.Normalize();
+	}
 
-	//   void Update()
-	//   {
-	//       float horizonal = Input.GetAxisRaw("Horizontal");
-	//       float vertical = Input.GetAxisRaw("Vertical");
-	//       Vector3 direction = new Vector3(horizonal, 0f, vertical).normalized;
+	void Move()
+	{
+		if (direction.magnitude > 0.1f && isGrounded)
+		{
+			Rotate(direction);
+			//if (slopeAngle < 90 && slopeAngle > 0)
+			//{
+			//	Debug.Log(slopeAngle);
+			//	rb.AddForce(direction * (movementSpeed + slopeAngle) * Time.deltaTime, ForceMode.VelocityChange);
+			//}
+			//else
+				rb.AddForce(direction * movementSpeed * Time.deltaTime, ForceMode.VelocityChange);
+		}
+		Debug.DrawLine(transform.position, transform.position + direction, new Color(1, 0, 1));
+	}
 
-	//       if (obiRope.CalculateLength() <= ropeLength)
-	//       {
-	//           if (direction.magnitude >= 0.1f)
-	//           {
-	//               Move(direction);
-	//           }
-	//       }
-	//       else
-	//	{
-	//           float otherPlayerDirection = Vector3.Angle(gameObject.transform.right, otherPlayer.transform.position);
-	//           float otherPlayerDistance = Vector3.Distance(gameObject.transform.position, otherPlayer.transform.position);
-	//           //Debug.Log(otherPlayerDirection);
+	void ReverseMoveForce()
+	{
+		//Stop movement when no key is pressed
+		if (direction.magnitude <= 0.1f)
+		{
+			if (rb.velocity.x > 0.1f || rb.velocity.x < -0.1f)
+				rb.AddForce(Vector3.left * stopSpeed * rb.velocity.x * Time.deltaTime, ForceMode.VelocityChange);
+			if (rb.velocity.z > 0.1f || rb.velocity.z < -0.1f)
+				rb.AddForce(Vector3.back * stopSpeed * rb.velocity.z * Time.deltaTime, ForceMode.VelocityChange);
+		}
 
-	//       }
+		//Avoid overshooting 
+		if (rb.velocity.x > maxMovementSpeed)
+		{
+			rb.AddForce(Vector3.left * (rb.velocity.x + movementSpeed) * Time.deltaTime, ForceMode.VelocityChange);
+			//Debug.Log("Right, rb.vel.x: " + rb.velocity.x);
+		}
+		if (rb.velocity.x < -maxMovementSpeed)
+		{
+			rb.AddForce(Vector3.left * (rb.velocity.x - movementSpeed) * Time.deltaTime, ForceMode.VelocityChange);
+			//Debug.Log("Left, rb.vel.x: " + rb.velocity.x);
+		}
+		if (rb.velocity.z > maxMovementSpeed)
+		{
+			rb.AddForce(Vector3.back * (rb.velocity.z + movementSpeed) * Time.deltaTime, ForceMode.VelocityChange);
+			//Debug.Log("Forward, rb.vel.z: " + rb.velocity.z);
+		}
+		if (rb.velocity.z < -maxMovementSpeed)
+		{
+			rb.AddForce(Vector3.back * (rb.velocity.z - movementSpeed) * Time.deltaTime, ForceMode.VelocityChange);
+			//Debug.Log("Back, rb.vel.z: " + rb.velocity.z);
+		}
+		if(rb.velocity.y > 0)
+		{
+			rb.AddForce(Vector3.down * (rb.velocity.y + jumpHeight) * Time.deltaTime, ForceMode.VelocityChange);
+			//Debug.Log("Up, rb.vel.y: " + rb.velocity.y);
+		}
+	}
 
-	//       JumpAndFall();
-	//   }
+	void GroundCheck()
+	{
+		isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
 
-	//   void Move(Vector3 direction)
-	//{
-	//       float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
-	//       float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
-	//       transform.rotation = Quaternion.Euler(0f, angle, 0f);
+		castpoint = new Ray(transform.position, Vector3.down);
+		if (Physics.Raycast(castpoint, out hit, 1.5f, groundMask))
+		{
+			direction = Vector3.ProjectOnPlane(direction, hit.normal);
+		}
+		direction.Normalize();
+		if (!isGrounded)
+		{
+			slopeAngle = 90;
+		}
+		else if(hit.normal != Vector3.up)
+		{
+			slopeAngle = Vector3.Angle(Vector3.back, direction);
+		}
+	}
 
-	//       Vector3 moveDir = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-	//       Debug.Log(moveDir.normalized * speed * Time.deltaTime);
-	//       //rb.velocity = moveDir.normalized * speed * Time.deltaTime;
-	//       characterController.Move(moveDir.normalized * speed * Time.deltaTime);
-	//   }
-
-	//void JumpAndFall()
-	//{
-	//	isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
-
-	//	if (isGrounded && velocity.y < 0)
-	//	{
-	//		velocity.y = -2f;
-	//	}
-
-	//	if (isGrounded && Input.GetKeyDown(jump))
-	//	{
-	//		velocity.y = Mathf.Sqrt(jumpHeight * gravity * -2);
-	//	}
-
-	//	velocity.y += gravity * Time.deltaTime;
-	//	characterController.Move(velocity * Time.deltaTime);
-	//}
+	void Rotate(Vector3 direction)
+	{
+		float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+		float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
+		transform.rotation = Quaternion.Euler(0f, angle, 0f);
+		//rb.AddTorque(new Vector3(0f, angle, 0f), ForceMode.VelocityChange);
+	}
 }
