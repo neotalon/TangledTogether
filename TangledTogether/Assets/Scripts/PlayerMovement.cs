@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public Rigidbody rb;
+	public Rigidbody rb;
     public Transform cam;
     public Transform groundCheck;
     public LayerMask groundMask;
@@ -21,6 +21,7 @@ public class PlayerMovement : MonoBehaviour
 	public float maxSlopeAngle;
 	public float stopSpeed;
 
+	private PlayerInput playerInput;
 	private RaycastHit hit;
 	private Vector3 direction;
 	private Ray castpoint;
@@ -28,12 +29,10 @@ public class PlayerMovement : MonoBehaviour
 	private float slopeAngle;
     private bool isGrounded;
 
-	[Header("Input")]
-	public KeyCode left = KeyCode.A;
-	public KeyCode right = KeyCode.D;
-	public KeyCode up = KeyCode.W;
-	public KeyCode down = KeyCode.S;
-	public KeyCode jump = KeyCode.Space;
+	private void Awake()
+	{
+		playerInput = gameObject.GetComponent<PlayerInputHolder>().playerInput;
+	}
 
 	private void Update()
 	{
@@ -50,7 +49,7 @@ public class PlayerMovement : MonoBehaviour
 
 	void Jump()
 	{
-		if(isGrounded && Input.GetKeyDown(jump))
+		if(isGrounded && Input.GetKeyDown(playerInput.jump))
 		{
 			rb.AddForce(new Vector3(0, jumpHeight, 0), ForceMode.Impulse);
 		}
@@ -63,15 +62,14 @@ public class PlayerMovement : MonoBehaviour
 	void MoveInput()
 	{
 		direction = Vector3.zero;
-		if (Input.GetKey(left))
+		if (Input.GetKey(playerInput.left))
 			direction += Vector3.left;
-		if (Input.GetKey(right))
+		if (Input.GetKey(playerInput.right))
 			direction += Vector3.right;
-		if (Input.GetKey(up))
+		if (Input.GetKey(playerInput.up))
 			direction += Vector3.forward;
-		if (Input.GetKey(down))
+		if (Input.GetKey(playerInput.down))
 			direction += Vector3.back;
-		//direction = horizontal + vertical;
 		direction.Normalize();
 	}
 
@@ -80,15 +78,9 @@ public class PlayerMovement : MonoBehaviour
 		if (direction.magnitude > 0.1f && isGrounded)
 		{
 			Rotate(direction);
-			//if (slopeAngle < 90 && slopeAngle > 0)
-			//{
-			//	Debug.Log(slopeAngle);
-			//	rb.AddForce(direction * (movementSpeed + slopeAngle) * Time.deltaTime, ForceMode.VelocityChange);
-			//}
-			//else
-				rb.AddForce(direction * movementSpeed * Time.deltaTime, ForceMode.VelocityChange);
+			rb.AddForce(direction * movementSpeed * Time.deltaTime, ForceMode.VelocityChange);
 		}
-		Debug.DrawLine(transform.position, transform.position + direction, new Color(1, 0, 1));
+		Debug.DrawLine(transform.position, transform.position + direction, Color.yellow);
 	}
 
 	void ReverseMoveForce()
