@@ -47,18 +47,6 @@ public class PlayerMovement : MonoBehaviour
 		Jump();
 	}
 
-	void Jump()
-	{
-		if(isGrounded && Input.GetKeyDown(playerInput.jump))
-		{
-			rb.AddForce(new Vector3(0, jumpHeight, 0), ForceMode.Impulse);
-		}
-		else if(!isGrounded)
-		{
-			rb.AddForce(gravity * Vector3.up);
-		}
-	}
-
 	void MoveInput()
 	{
 		direction = Vector3.zero;
@@ -75,7 +63,7 @@ public class PlayerMovement : MonoBehaviour
 
 	void Move()
 	{
-		if (direction.magnitude > 0.1f && isGrounded)
+		if (direction.magnitude > 0.1f && isGrounded && !playerInput.disableMovement)
 		{
 			Rotate(direction);
 			rb.AddForce(direction * movementSpeed * Time.deltaTime, ForceMode.VelocityChange);
@@ -98,27 +86,34 @@ public class PlayerMovement : MonoBehaviour
 		if (rb.velocity.x > maxMovementSpeed)
 		{
 			rb.AddForce(Vector3.left * (rb.velocity.x + movementSpeed) * Time.deltaTime, ForceMode.VelocityChange);
-			//Debug.Log("Right, rb.vel.x: " + rb.velocity.x);
 		}
 		if (rb.velocity.x < -maxMovementSpeed)
 		{
 			rb.AddForce(Vector3.left * (rb.velocity.x - movementSpeed) * Time.deltaTime, ForceMode.VelocityChange);
-			//Debug.Log("Left, rb.vel.x: " + rb.velocity.x);
 		}
 		if (rb.velocity.z > maxMovementSpeed)
 		{
 			rb.AddForce(Vector3.back * (rb.velocity.z + movementSpeed) * Time.deltaTime, ForceMode.VelocityChange);
-			//Debug.Log("Forward, rb.vel.z: " + rb.velocity.z);
 		}
 		if (rb.velocity.z < -maxMovementSpeed)
 		{
 			rb.AddForce(Vector3.back * (rb.velocity.z - movementSpeed) * Time.deltaTime, ForceMode.VelocityChange);
-			//Debug.Log("Back, rb.vel.z: " + rb.velocity.z);
 		}
 		if(rb.velocity.y > 0)
 		{
 			rb.AddForce(Vector3.down * (rb.velocity.y + jumpHeight) * Time.deltaTime, ForceMode.VelocityChange);
-			//Debug.Log("Up, rb.vel.y: " + rb.velocity.y);
+		}
+	}
+
+	void Jump()
+	{
+		if(isGrounded && Input.GetKeyDown(playerInput.jump) && !playerInput.disableMovement)
+		{
+			rb.AddForce(new Vector3(0, jumpHeight, 0), ForceMode.Impulse);
+		}
+		else if(!isGrounded)
+		{
+			rb.AddForce(gravity * Vector3.up);
 		}
 	}
 

@@ -12,4 +12,7 @@ public class PlayerInput : ScriptableObject
 	public KeyCode jump = KeyCode.Space;
 	public KeyCode grab = KeyCode.G;
 	public KeyCode yeet = KeyCode.F;
+
+	public bool disableMovement = false;
+	public bool disableThrow = false;
 }

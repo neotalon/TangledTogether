@@ -14,6 +14,14 @@ public class Yeet : MonoBehaviour
 	public LayerMask targetMask;
 	public LayerMask obstacleMask;
 
+	[Header("Throw")]
+	public Transform target;
+	public float h = 25;
+	public float gravity = -18;
+	public float angle = 1;
+	private Vector3 launchDirection;
+	public float throwForce;
+
 	private void Awake()
 	{
 		playerInput = gameObject.GetComponent<PlayerInputHolder>().playerInput;
@@ -26,14 +34,18 @@ public class Yeet : MonoBehaviour
 
 	void YeetOtherPlayer()
 	{
-		if (Input.GetKey(playerInput.yeet))
+		if (Input.GetKey(playerInput.yeet) && !playerInput.disableThrow)
 		{
 			Debug.Log("Prepare to yeet");
+			playerInput.disableMovement = true;
 			CheckOtherPlayerPos();
+
+			Debug.DrawRay(gameObject.transform.position, GetDirection(), Color.cyan);
 		}
 		else if (Input.GetKeyUp(playerInput.yeet))
 		{
 			Debug.Log("Yeet denied");
+			playerInput.disableMovement = false;
 		}
 	}
 
@@ -52,17 +64,35 @@ public class Yeet : MonoBehaviour
 				if (!Physics.Raycast(transform.position, dirToTarget, dstToTarget, obstacleMask))
 				{
 					Debug.Log("Y E E T");
+					Launch();
+					playerInput.disableMovement = false;
 				}
 			}
 		}
 	}
 
-	public Vector3 DirFromAngle(float angleInDegrees, bool angleIsGlobal)
+	void Launch()
 	{
-		if (!angleIsGlobal)
-		{
-			angleInDegrees += transform.eulerAngles.y;
-		}
-		return new Vector3(Mathf.Sin(angleInDegrees * Mathf.Deg2Rad), 0, Mathf.Cos(angleInDegrees * Mathf.Deg2Rad));
+		launchDirection = GetDirection();
+		otherPlayer.transform.position = new Vector3(transform.position.x, transform.position.y + 0.5f, transform.position.z);
+		otherPlayer.GetComponent<Rigidbody>().AddForce(launchDirection * throwForce, ForceMode.VelocityChange);
+		playerInput.disableThrow = true;
+		otherPlayer.GetComponent<PlayerInputHolder>().playerInput.disableThrow = true;
+		StartCoroutine(WaitForThrow());
+	}
+
+	Vector3 GetDirection()
+	{
+		Vector3 direction = -gameObject.transform.forward + Vector3.up * angle;
+		direction.Normalize();
+
+		return direction;
+	}
+
+	IEnumerator WaitForThrow()
+	{
+		yield return new WaitForSeconds(1);
+		playerInput.disableThrow = false;
+		otherPlayer.GetComponent<PlayerInputHolder>().playerInput.disableThrow = false;
 	}
 }
