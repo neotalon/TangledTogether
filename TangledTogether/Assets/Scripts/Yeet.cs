@@ -15,7 +15,6 @@ public class Yeet : MonoBehaviour
 	public LayerMask obstacleMask;
 
 	[Header("Throw")]
-	public Transform target;
 	public float h = 25;
 	public float gravity = -18;
 	public float angle = 1;
