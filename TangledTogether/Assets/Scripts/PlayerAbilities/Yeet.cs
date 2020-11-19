@@ -7,9 +7,9 @@ public class Yeet : MonoBehaviour
 	private PlayerInput playerInput;
 	private GameObject otherPlayer;
 
-	public float viewRadius;
+	public float viewRadius = 1.1f;
 	[Range(0, 360)]
-	public float viewAngle;
+	public float viewAngle = 150;
 
 	public LayerMask targetMask;
 	public LayerMask obstacleMask;
@@ -33,6 +33,7 @@ public class Yeet : MonoBehaviour
 
 	void YeetOtherPlayer()
 	{
+		//TODO: TP PLAYER TO A GIVEN POINT IN FRONT OF THE THROWING PLAYER TO MAKE THE THROW MORE CONSITENT
 		if (Input.GetKey(playerInput.yeet) && !playerInput.disableThrow)
 		{
 			Debug.Log("Prepare to yeet");

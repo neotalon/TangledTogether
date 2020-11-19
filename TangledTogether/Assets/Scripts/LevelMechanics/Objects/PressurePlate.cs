@@ -8,12 +8,15 @@ public class PressurePlate : MonoBehaviour
     public float moveDist;
     public float speedDown;
     public float speedUp;
-    public float weightNeeded;
+    public float neededWeight;
+
+	public bool movePartial;
+
     private Vector3 startPos;
     private Vector3 newPos;
-    [SerializeField] private float currentWeight;
-    [SerializeField] private bool activate;
-	public float test;
+	private Vector3 tempPos;
+    private float currentWeight;
+    private bool activate;
 
     // Start is called before the first frame update
     void Awake()
@@ -25,30 +28,56 @@ public class PressurePlate : MonoBehaviour
 	// Update is called once per frame
 	void FixedUpdate()
     {
-		if (currentWeight >= weightNeeded)
+		MoveBlockPartial();
+		MoveBlock();
+	}
+
+	void MoveBlockPartial()
+	{
+		if (movePartial)
 		{
-			moveObject.transform.position = Vector3.MoveTowards(moveObject.transform.position, newPos, speedDown * Time.deltaTime);
+			tempPos = new Vector3(startPos.x, startPos.y + moveDist * (currentWeight / neededWeight), startPos.z);
+			moveObject.transform.position = Vector3.MoveTowards(moveObject.transform.position, tempPos, speedDown * Time.deltaTime);
 			if (moveObject.transform.position == newPos)
 			{
 				activate = true;
 			}
+			else
+			{
+				activate = false;
+			}
 		}
-		else
+	}
+
+	void MoveBlock()
+	{
+		if (!movePartial)
 		{
-			moveObject.transform.position = Vector3.MoveTowards(moveObject.transform.position, startPos, speedUp * Time.deltaTime);
-			activate = false;
+			if (currentWeight >= neededWeight)
+			{
+				moveObject.transform.position = Vector3.MoveTowards(moveObject.transform.position, newPos, speedDown * Time.deltaTime);
+				if (moveObject.transform.position == newPos)
+				{
+					activate = true;
+				}
+			}
+			else
+			{
+				moveObject.transform.position = Vector3.MoveTowards(moveObject.transform.position, startPos, speedUp * Time.deltaTime);
+				activate = false;
+			}
 		}
 	}
 
-	private void OnCollisionEnter(Collision collision)
+	private void OnTriggerEnter(Collider collision)
 	{
-		if (collision.relativeVelocity.y <= test)
-			currentWeight += collision.rigidbody.mass;
+		if(collision.GetComponent<Rigidbody>() != null)
+			currentWeight += collision.gameObject.GetComponent<Rigidbody>().mass;
 	}
 
-	private void OnCollisionExit(Collision collision)
+	private void OnTriggerExit(Collider collision)
 	{
-		//TODO: Continue here
-		currentWeight -= collision.rigidbody.mass;
+		if (collision.GetComponent<Rigidbody>() != null)
+			currentWeight -= collision.gameObject.GetComponent<Rigidbody>().mass;
 	}
 }

@@ -15,4 +15,5 @@ public class PlayerInput : ScriptableObject
 
 	public bool disableMovement = false;
 	public bool disableThrow = false;
+	public bool isGrabbing = true;
 }
