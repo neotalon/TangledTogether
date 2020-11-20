@@ -5,7 +5,8 @@ using UnityEngine;
 public class PressurePlate : MonoBehaviour
 {
     public GameObject moveObject;
-    public float moveDist;
+	public List<GameObject> activationObejcts;
+	public float moveDist;
     public float speedDown;
     public float speedUp;
     public float neededWeight;
@@ -41,10 +42,24 @@ public class PressurePlate : MonoBehaviour
 			if (moveObject.transform.position == newPos)
 			{
 				activate = true;
+				if (activationObejcts != null)
+				{
+					for (int i = 0; i < activationObejcts.Count; i++)
+					{
+						activationObejcts[i].GetComponent<Activator>().activeate = true;
+					}
+				}
 			}
 			else
 			{
 				activate = false;
+				if (activationObejcts != null)
+				{
+					for (int i = 0; i < activationObejcts.Count; i++)
+					{
+						activationObejcts[i].GetComponent<Activator>().activeate = false;
+					}
+				}
 			}
 		}
 	}
@@ -59,12 +74,26 @@ public class PressurePlate : MonoBehaviour
 				if (moveObject.transform.position == newPos)
 				{
 					activate = true;
+					if (activationObejcts != null)
+					{
+						for (int i = 0; i < activationObejcts.Count; i++)
+						{
+							activationObejcts[i].GetComponent<Activator>().activeate = true;
+						}
+					}
 				}
 			}
 			else
 			{
 				moveObject.transform.position = Vector3.MoveTowards(moveObject.transform.position, startPos, speedUp * Time.deltaTime);
 				activate = false;
+				if (activationObejcts != null)
+				{
+					for (int i = 0; i < activationObejcts.Count; i++)
+					{
+						activationObejcts[i].GetComponent<Activator>().activeate = false;
+					}
+				}
 			}
 		}
 	}

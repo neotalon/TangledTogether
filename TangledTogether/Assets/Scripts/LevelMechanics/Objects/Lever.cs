@@ -9,6 +9,7 @@ public class Lever : MonoBehaviour
     public bool active;
     public float startAngle = 315;
     public float rotation = 90;
+    public List<GameObject> activationObejcts;
 
     // Update is called once per frame
     void Update()
@@ -28,6 +29,13 @@ public class Lever : MonoBehaviour
             if (Mathf.Ceil(transform.eulerAngles.x) == (startAngle + rotation) % 360)
             {
                 active = true;
+                if(activationObejcts != null)
+                {
+                    for(int i = 0; i < activationObejcts.Count; i++)
+                    {
+                        activationObejcts[i].GetComponent<Activator>().activeate = true;
+                    }
+                }
                 move = false;
             }
         }
